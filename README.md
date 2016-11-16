@@ -1,2 +1,2 @@
 # NTT
-g++ -g -O2 foo.cpp -o foo -lntl -lgmp -lm
+g++ -g -O2 16point.cpp -o test -lntl -lgmp -lm
