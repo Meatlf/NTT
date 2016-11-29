@@ -37,10 +37,13 @@ int main(){
 	cudaMalloc(&dx,len*sizeof(uint32));
 	cudaMalloc(&dt,len*sizeof(uint64));
 
-  for(int i=0;i<len;i++){
-		hx[i]=111;		//32 bits random number
+  for(int i=0;i<4;i++){
+		hx[i]=11;		
 	 	ht[i]=0;
-		//cout<<"test"<<hx[i];   //for test the function "rand"
+	}
+  for(int i=4;i<16;i++){
+		hx[i]=33;
+		ht[i]=0;
 	}
   	cudaMemcpy(dx,hx,len*sizeof(uint32),cudaMemcpyHostToDevice);
 	ntt_16_1(dt,dx);

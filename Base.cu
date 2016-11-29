@@ -348,7 +348,7 @@ __global__ void ntt_16_1_kernel(uint64 *dst,uint32 *src){
 	_ntt4(samples);
 	#pragma unroll
 		for(int i=0;i<4;i++)
-			dst[4*tidx+i]=samples[i];
+			dst[4*i+tidx]=samples[i];
 	}
 __global__ void ntt_1_16k_ext(uint64_t *dst, uint32_t *src){
 	__shared__ uint64_t buffer[512], roots[128];//always compute 8 64-sample ntt's in a block
