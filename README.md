@@ -1,3 +1,4 @@
-# NTT
-my's Project
-g++ -g -O2 basecode.cpp -o test -lgmp -lntl -lm
+# NTTwithMakefile
+1.ttz's Project
+2.the makefile writed by my can be used in NTT implemented in GPU
+3.the main file gpuMul.cu
