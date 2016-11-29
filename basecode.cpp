@@ -611,7 +611,7 @@ ZZ convToZZ(int size, uint64_t* data){
 
 
 int main(){
-	int fftSize=16;
+	int fftSize=64;
 
 	uint64_t* x=(uint64_t*)malloc(sizeof(uint64_t)*fftSize);
 	uint64_t* y=(uint64_t*)malloc(sizeof(uint64_t)*fftSize);
@@ -620,10 +620,10 @@ int main(){
 				x[i]=11;
 	}
 	for(int i=4;i<fftSize;i++){
-				x[i]=33;
+				x[i]=22;
 	}
   largeFFT(x,y,fftSize,0);
-	cout<<"the radixj16 output are:"<<endl;
+	cout<<"the radix64 output are:"<<endl;
 	for(int i=0;i<fftSize;i++){
 	cout<<y[i]<<endl;}
 	cout<<endl<<endl;
