@@ -1,2 +1,3 @@
 # NTT
-g++ -g -O2 16point.cpp -o test -lntl -lgmp -lm
+my's Project
+g++ -g -O2 basecode.cpp -o test -lgmp -lntl -lm
