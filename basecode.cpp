@@ -22,6 +22,21 @@ using namespace NTL;
 #define _N2       0x0000000000010001ull //65537
 #define _ROOT2 	  0x3ull
 
+void output(uint64_t* x, int length){
+	for(int i = 0; i < length; i++){
+		cout << x[i] << ", ";
+	}
+	cout << endl << endl;
+	return;
+}
+
+void output(uint32_t* x, int length){
+	for(int i = 0; i < length; i++){
+		cout << x[i] << ", ";
+	}
+	cout << endl << endl;
+	return;
+}
 uint64_t _add(uint64_t a, uint64_t b) {
 	uint64_t sum = a + b;
   	if(sum < a){
@@ -215,6 +230,13 @@ void transpose(uint64_t *x, uint64_t *X, uint32_t size, uint32_t xLength) {
     for(index=0;index<xLength;index++)
       X[group*xLength+index]=x[index*size/xLength+group];
 }
+void transpose64K1(int size) {
+  for(int index = 0; index < size; index++){
+  	cout << index << " -> " << (index % 4096) * 16 + index/4096 << endl;
+  }
+
+}
+
 
 void smallFFTNoMultiply(uint64_t *x, uint64_t *X, uint32_t size, int inverse) {
     int i, j;
@@ -502,6 +524,7 @@ void largeFFT(uint64_t *x, uint64_t *X, uint32_t size, int inverse) {
 		X[i]=_normalize(_multiply(X[i], inv));
 	free(buffer);
 }
+
 void largeFFT2(uint64_t *x, uint64_t *X, uint32_t size, int inverse) {
   int      count=1, fft, i, j, k, l, m;
   uint64_t r, inv=1, omega, currentOmega, c0, c1;
@@ -660,6 +683,8 @@ void radix64V2(uint64_t *from, uint64_t *to, uint32_t size, uint32_t l, int inve
 	}
 }
 
+
+
 void radix64FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inverse) {
    
 	uint32_t l, m, j, k, base, current, offset;
@@ -679,28 +704,31 @@ void radix64FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inv
 	m=1;
 
 	for(int i=0; i<level; i++) {
+
+		// cout << endl << endl << "for the " << i << "th level" << endl;
 		for(j=0;j<l;j++) {
 			if(inverse)
-				r=_power(_inverseRoot(64*l), j);
+				r = _inverseRoot(64*l);
 			else
-				r=_power(_root(64*l), j);
+				r = _root(64*l);
 			
 				for(k=0;k<m;k++) {
+					// cout << endl << endl;
 					for(int t=0; t<64; t++){
-						if(i == 0 && j == 3 /* && k == 0*/)
-							cout << "put the " << k + j*m + t*l*m << " to " << t << " in smallX" <<  endl;
+						//if(t == 0 || t == 1 || t == 2|| t == 63 || t == 62)
+						// cout << "	x[" << k + j*m + t*l*m << "] -> x[" << t << "]" << endl; 
           				smallX[t]=from[k + j*m + t*l*m];
 					}
-					if(i == 0 && j == 3 /* && k == 0*/)
-						cout << "64 FFT to smallX, we have smallY[64]"  << endl << endl;
+					// cout << endl << "	64 FFT " << endl << endl;
 					smallFFT(smallX, smallY, 64, inverse);
+
 					for(int t=0; t<64; t++) {
 						if(inverse)
-							to[k+64*j*m+t*m]=_multiply(smallY[t], _power(r, t));
+							to[k+64*j*m+t*m]=_multiply(smallY[t], _power(r, t * j));
 						else{
-							if(i == 0 && j == 3 /* && k == 0*/)
-								cout << "multiply twiddle factor of " << t << " and push to " << k+64*j*m+t*m << endl;
-							to[k+64*j*m+t*m]=_multiply(smallY[t], _power(r, t));
+							//if(t == 0 || t == 1 || t == 2|| t == 63 || t == 62)
+								// cout << "	X[" << t << "]" << "*W" << 64*l << "^" << t * j << " -> " << k+64*j*m+t*m << endl;
+							to[k+64*j*m+t*m]=_multiply(smallY[t], _power(r, t * j));
 						}
 					}
 				} 
@@ -714,8 +742,73 @@ void radix64FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inv
 
 	for(int i=0;i<size;i++)
 		X[i]=from[i];
+
+	free(buffer);
 }
 
+
+void largeFFT64(uint64_t *x, uint64_t *X, uint64_t size, int inverse) {
+	uint64_t l = size / 4096;
+	uint64_t* bufferIn4K =(uint64_t *)malloc(sizeof(uint64_t)*4096);
+	uint64_t* bufferOut4K =(uint64_t *)malloc(sizeof(uint64_t)*4096);	
+	uint64_t* buffer = (uint64_t *)malloc(sizeof(uint64_t)*size);	
+	uint64_t smallX[16], smallY[16];
+
+	uint64_t w;
+
+	for(int i = 0; i < l; i++){
+		// cout << endl << endl<< "for the " << i + 1 << "th level" << endl;
+		if(inverse){
+			w = _inverseRoot(size);
+		}
+		else{
+			w = _root(size);
+		}
+
+		for(int j = 0; j < 4096; j++){
+			// if(j == 0 || j == 1 || j == 2 || j == 4095 || j == 4094){
+			// 	cout << "	x[" << j * 16 + i << "] -> " << "x[" << j << "]" << endl;
+			// }
+			bufferIn4K[j] = x[j * 16 + i];
+		}
+		// cout << endl << "	4K FFT" << endl << endl;
+		//largeFFT(bufferIn4K, bufferOut4K, 4096, inverse);
+		radix64FFT(bufferIn4K, bufferOut4K, 4096, 2, 0);
+
+		for(int j = 0; j < 4096; j++){
+			// if(j == 0 || j == 1 || j == 2 || j == 4095 || j == 4094){
+			// 	cout << "	X[" << j << "] * W" << size << "^" << i * j << " -> buffer[" << i * 4096 + j<<"]" << endl;
+			// }
+			buffer[i * 4096 + j] = _multiply(bufferOut4K[j], _power(w, j * i));
+		}
+	}
+	cout << "**********************************" << endl;
+	output(buffer, 64);
+	cout << "**********************************" << endl;
+
+	for(int i = 0; i < size/16; i++){
+		// cout << endl << endl<< "for the " << i + 1 << "th 16" << endl;
+
+		for(int j = 0; j < 16; j++){
+			cout << "	buffer[" << j * 4096 + i << "] -> x[" << j << "]" << endl;
+			smallX[j] = buffer[j * 4096 + i];
+		}
+
+		// cout << endl << "	16 FFT" << endl << endl;
+		smallFFT(smallX, smallY, 16, inverse);
+
+		for(int j = 0; j < 16; j++){
+			// cout << "	X[" << j << "] -> result[" << j * 4096 + i << "]" << endl;
+			X[j * 4096 + i] = smallY[j];
+		}
+	}
+
+
+	free(bufferIn4K); free(bufferOut4K); free(buffer);
+	bufferIn4K = NULL; bufferOut4K = NULL; buffer = NULL;
+	
+	return;
+}
 void smallFFT16(uint64_t *x, uint64_t *X, uint32_t size, int inverse) {
 	int i, j;
 	uint64_t total, r, inv=1, value;
@@ -735,6 +828,70 @@ void smallFFT16(uint64_t *x, uint64_t *X, uint32_t size, int inverse) {
 		}
 		X[i]=_normalize(_multiply(total, inv));
 	}
+}
+
+void radix416(uint64_t *x, uint64_t *X, uint32_t size, int inverse){
+	int l, j, k;
+	uint64_t *buffer, *to, *from, *swap;
+	uint64_t smallX[4], smallY[4], r;
+	
+	buffer=(uint64_t *)malloc(sizeof(uint64_t)*size);
+	for(int i = 0; i < size; i++){
+		buffer[i]=x[i];
+	}
+  	
+
+	from = buffer;
+	to = X;
+	l = size/4;
+	int m = 1;
+
+	for(int i = 0; i < 2; i++){
+		cout << "for the " << i+1 << " th level: " << endl;
+		for(j = 0; j < l; j++){
+			if(inverse)
+	    		r = _power(_inverseRoot(4 * l), j);
+			else
+				r = _power(_root(4 * l), j);
+
+			for(k = 0; k < m; k++) {
+				cout /*<< "	in " << k << " of m:"*/ << endl;
+				cout << " transposing as follow: " << endl;
+				for(int t = 0; t < 4; t++){
+					smallX[t] = from[k + j*m + t*l*m];
+						cout << "		x[" << k + j*m + t*l*m << "] -> x[" << t << "]" << endl;
+				}
+
+				smallFFT(smallX, smallY, 4, inverse);
+					cout << "......" << endl << "		x[i]" << " 16 point DFT X[i]" << endl << "......" << endl;
+				for(int t=0; t<4; t++) {
+					if(inverse)
+						to[k + 4*j*m + t*m] = _multiply(smallY[t], _power(r, t));
+					else{
+						if(i == 0)
+							to[k + 4*j*m + t*m] = _multiply(smallY[t], _power(r, t)); //
+						else
+							to[k + 4*j*m + t*m] = smallY[t];
+						
+						if (i == 0)
+							cout << "		" << "X[" << t << "]" << " * W" << 4*l << "^" << t << " -> " << k + 4*j*m + t*m << endl;
+						else
+							cout << "		" << "X[" << t << "]" << " -> " << k + 4*j*m + t*m << endl;
+					}
+				}
+			} 
+		}
+		swap = from;
+		from = to;
+		to = swap;
+		l = l/4;
+		m = m*4;
+
+	}
+	for(int i=0;i<size;i++)
+		X[i] = from[i];
+	
+	free(buffer);
 }
 
 void radix16FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inverse) {
@@ -778,9 +935,13 @@ void radix16FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inv
 					if(inverse)
 						to[k + 16*j*m + t*m] = _multiply(smallY[t], _power(r, t));
 					else{
-						to[k + 16*j*m + t*m] = _multiply(smallY[t], _power(r, t)); //
-						//if (i == 0)
-							cout << "		" << "X[" << t << "]" << " * Wn" << t << " -> " << k + 16*j*m + t*m << endl;
+						if(i == 0)
+							to[k + 16*j*m + t*m] = _multiply(smallY[t], _power(r, t)); //
+						else{
+							to[k + 16*j*m + t*m] = smallY[t];
+						}
+							cout << "		" << "X[" << t << "]" << " * W" << 16*l << "^" << t * j << " -> " << k + 16*j*m + t*m << endl;
+
 					}
 				}
 			} 
@@ -793,6 +954,8 @@ void radix16FFT(uint64_t *x, uint64_t *X, uint32_t size, uint32_t level, int inv
 	}
 	for(int i=0;i<size;i++)
 		X[i] = from[i];
+	
+	free(buffer);
 }
 
 int format_binary(uint64_t x, uint32_t *s)
@@ -937,61 +1100,46 @@ void barrettMul(uint32_t& a, uint32_t& b, uint64_t& result, uint64_t n, uint64_t
   result = r;
   return;
 }
-void output(uint64_t* x, int length){
-	for(int i = 0; i < length; i++){
-		cout << x[i] << ", ";
+
+
+void twiddleGen(int size,  uint64_t* input){
+	uint64_t r = _root(size);
+	int len = sqrt(size);
+	cout << len << endl;
+	for(int i = 0; i < len; i++){
+		for(int j = 0; j < len; j++){
+			input[i * 64 + j] = _power(r, i * j);	
+		}
 	}
-	cout << endl << endl;
 	return;
 }
-void output(uint32_t* x, int length){
-	for(int i = 0; i < length; i++){
-		cout << x[i] << ", ";
+
+void twiddleGen64K(int size,  uint64_t* input){
+	uint64_t r = _root(size);
+	int len = size / 4096;
+	
+	for(int i = 0; i < len; i++){
+		for(int j = 0; j < 4096; j++){
+			input[i * 4096 + j] = i * j;	
+		}
 	}
-	cout << endl << endl;
 	return;
 }
 
 int main(){
 
-	int fftSize = 256;
+	uint64_t fftSize = 256;
 
 	uint64_t* x = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
 	uint64_t* X = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
-	uint64_t* y = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
-	uint64_t* Y = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
-	uint64_t* z = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
-	uint64_t* Z = (uint64_t*)malloc(sizeof(uint64_t) * fftSize);
-	uint64_t* temp = (uint64_t*)malloc(sizeof(uint64_t) * 4096);
 	
-	for(int i = 0; i < 64; i++){
-		x[i] = 0b111111111111111111111111;
-		y[i] = 0b111111111111111111111111;
-		z[i] = 0b111111111111111111111111;
+	for(int i = 0; i < fftSize; i++){
+		x[i] = i;
 	}
-	//radix64FFT(x, X, fftSize, 2, 0);
-	radix16FFT(y, Y, fftSize, 2, 0);
-	largeFFT(z, Z, fftSize, 0);
 
-	// cout << "the radix64 output are: " << endl;
-	// output(X, 64);
-	// cout << endl << endl;
-
-	cout << "the radix16 output are: " << endl;
-	output(Y, 64);
-	cout << endl << endl;
-
-	cout << "the fft output should be: " << endl;
-	output(Z, 64);
-	cout << endl << endl;
-
-	free(x);free(X);free(temp);
-	x = NULL; X = NULL; temp = NULL;
-	free(y);free(Y);
-	y = NULL; Y = NULL; 
-	free(z);free(Z);
-	z = NULL; Z = NULL;
-
+	largeFFT(x,X,fftSize,0);
+	output(X,fftSize);
+	free(x);free(X);
+	x = NULL; X = NULL; 
 	return 0;
-	
 }
