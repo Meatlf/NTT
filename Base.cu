@@ -349,8 +349,8 @@ void _ntt16(uint64_t *x){
 			s2[i]=_ls_modP(s2[i],12*i);
 	#pragma unroll
 		for(int i=0;i<8;i++){
-			x[i]=s1[i]+s2[i];
-			x[i+8]=s1[i]-s2[i];
+			x[i]=_add_modP(s1[i],s2[i]);
+			x[i+8]=_sub_modP(s1[i],s2[i]);
 		}
 }
 __global__ void ntt_16_function(uint64_t *x){

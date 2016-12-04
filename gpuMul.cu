@@ -34,11 +34,8 @@ int main(){
 
 	cudaMalloc(&dx,len*sizeof(uint64));
 
-  for(int i=0;i<4;i++){
-		hx[i]=11;		
-	}
-	for(int i=4;i<16;i++){
-		hx[i]=33;
+  for(int i=0;i<16;i++){
+		hx[i]=i;		
 	}
   	cudaMemcpy(dx,hx,len*sizeof(uint64),cudaMemcpyHostToDevice);
 	ntt_16_1(dx);
