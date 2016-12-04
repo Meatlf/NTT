@@ -28,33 +28,26 @@ using namespace NTL;
 		
 int main(){
 	int len=16;
-	uint32 *hx,*dx;
-	uint64 *ht,*dt;
+	uint64 *hx,*dx;
 
-	cudaMallocHost(&hx,len*sizeof(uint32));
-	cudaMallocHost(&ht,len*sizeof(uint64));
+	cudaMallocHost(&hx,len*sizeof(uint64));
 
-	cudaMalloc(&dx,len*sizeof(uint32));
-	cudaMalloc(&dt,len*sizeof(uint64));
+	cudaMalloc(&dx,len*sizeof(uint64));
 
   for(int i=0;i<4;i++){
 		hx[i]=11;		
-	 	ht[i]=0;
 	}
-  for(int i=4;i<16;i++){
+	for(int i=4;i<16;i++){
 		hx[i]=33;
-		ht[i]=0;
 	}
-  	cudaMemcpy(dx,hx,len*sizeof(uint32),cudaMemcpyHostToDevice);
-	ntt_16_1(dt,dx);
-	cudaMemcpy(ht,dt,len*sizeof(uint64),cudaMemcpyDeviceToHost);
+  	cudaMemcpy(dx,hx,len*sizeof(uint64),cudaMemcpyHostToDevice);
+	ntt_16_1(dx);
+	cudaMemcpy(hx,dx,len*sizeof(uint64),cudaMemcpyDeviceToHost);
 
 	for(int i=0;i<len;i++){
-		cout<<ht[i]<<endl;
+		cout<<hx[i]<<endl;
 	}
 	cudaFree(dx);
-	cudaFree(dt);
 	cudaFreeHost(hx);
-	cudaFreeHost(ht);
 	return 0;
 }

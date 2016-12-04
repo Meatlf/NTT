@@ -333,6 +333,29 @@ void _ntt8(uint64_t *x) {
 	x[6] = s[6];
 	x[7] = s[7];
 }
+__device__ __host__ __inline__
+void _ntt16(uint64_t *x){
+	register uint64_t s1[8],s2[8];
+	#pragma unroll
+		for(int i=0;i<8;i++){
+			s1[i]=x[2*i];
+			s2[i]=x[2*i+1];	
+		}
+	_ntt8(s1);
+	_ntt8(s2);
+	
+	#pragma unroll
+		for(int i=0;i<8;i++)
+			s2[i]=_ls_modP(s2[i],12*i);
+	#pragma unroll
+		for(int i=0;i<8;i++){
+			x[i]=s1[i]+s2[i];
+			x[i+8]=s1[i]-s2[i];
+		}
+}
+__global__ void ntt_16_function(uint64_t *x){
+	_ntt16(x);
+}
 __global__ void ntt_16_1_kernel(uint64 *dst,uint32 *src){
 	register uint64_t  samples[4];
 	#pragma unroll
@@ -348,7 +371,7 @@ __global__ void ntt_16_1_kernel(uint64 *dst,uint32 *src){
 	_ntt4(samples);
 	#pragma unroll
 		for(int i=0;i<4;i++)
-			dst[4*i+tidx]=samples[i];
+			dst[4*tidx+i]=samples[i];
 	}
 __global__ void ntt_1_16k_ext(uint64_t *dst, uint32_t *src){
 	__shared__ uint64_t buffer[512], roots[128];//always compute 8 64-sample ntt's in a block
@@ -379,7 +402,7 @@ __global__ void ntt_1_16k_ext(uint64_t *dst, uint32_t *src){
 #pragma unroll
 	for(int i=0; i<8; i++)
 		samples[i]=buffer[(i<<6) | from_buffer];
-	_ntt8(samples);
+		_ntt8(samples);
 #pragma unroll
 	for(int i=0; i<8; i++)
 		dst[to_mem | (i<<5)] = _mul_modP(samples[i], roots[((tidx&0x7)>>2<<6) | (tidx>>3) | (i<<3)]);

@@ -14,9 +14,9 @@ texture<uint32_t, 1> tex_roots_64k;
 static uint64_t **d_swap; // conversion buffer
 static uint32_t **d_hold; // intt result buffer
 
-void ntt_16_1(uint64_t *X,uint32_t *x)
+void ntt_16_1(uint64_t *x)
 {
-	ntt_16_1_kernel<<<1,4>>>(X,x);
+	ntt_16_function<<<1,1>>>(x);
 }
 void initNtt(int length) 
 {

@@ -64,6 +64,7 @@ __global__ void crt(uint32 *dst, uint32 *src, int pnum, int w32,
 __global__ void icrt(uint32 *dst, uint32 *src, int pnum, int M_w32,
 				int mi_w32, int mlen, int clen);
 __global__ void ntt_16_1_kernel(uint64 *dst,uint32 *src);
+__global__ void ntt_16_function(uint64 *x);
 /**	ntt kernels	*/
 __global__ void ntt_1_16k_ext(uint64 *dst, uint32 *src);
 __global__ void ntt_1_16k_ext_block(uint64 *dst, uint32 *src, int chunksize, int chunkid, int w32);

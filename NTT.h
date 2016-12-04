@@ -11,7 +11,7 @@
 #include <stdint.h>
 NTL_CLIENT
 
-void ntt_16_1(uint64_t *X,uint32_t *x);
+void ntt_16_1(uint64_t *x);
 void initNtt(int length) ;
 
 uint64_t **ptrNttSwap();
